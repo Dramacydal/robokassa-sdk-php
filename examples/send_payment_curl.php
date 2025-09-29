@@ -1,44 +1,37 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
-
-use Robokassa\Robokassa;
+require_once __DIR__ . '/bootstrap.php';
 
 /**
- * Пример использования метода sendPaymentRequestCurl()
+ * Пример использования метода payment()->sendCurl()
  * Создаёт платёжную ссылку через обычный POST-запрос (не JWT)
  */
 
 try {
-    $robokassa = new Robokassa([
-        'login' => 'merchant_login',
-        'password1' => 'password1',
-        'password2' => 'password2',
-        'hashType' => 'md5'
-    ]);
+	$robokassa = createRobokassa();
 
-    $params = [
-        'OutSum' => 100.00,
-        'InvoiceID' => 123456,
-        'Description' => 'Оплата заказа #123456',
-        'Culture' => 'ru',
-        'Receipt' => [
-            'items' => [
-                [
-                    'name' => 'Товар 1',
-                    'quantity' => 1,
-                    'sum' => 100.00,
-                    'payment_method' => 'full_payment',
-                    'payment_object' => 'commodity',
-                    'tax' => 'none'
-                ]
-            ]
-        ]
-    ];
+	$params = [
+	    'OutSum' => 100.00,
+	    'InvoiceID' => 123456,
+	    'Description' => 'Оплата заказа #123456',
+	    'Culture' => 'ru',
+	    'Receipt' => [
+	        'items' => [
+	            [
+	                'name' => 'Товар 1',
+	                'quantity' => 1,
+	                'sum' => 100.00,
+	                'payment_method' => 'full_payment',
+	                'payment_object' => 'commodity',
+	                'tax' => 'none'
+	            ]
+	        ]
+	    ]
+	];
 
-    $url = $robokassa->sendPaymentRequestCurl($params);
-    echo "Ссылка на оплату: $url\n";
+	$url = $robokassa->payment()->sendCurl($params);
+	echo "Ссылка на оплату: $url\n";
 
 } catch (Exception $e) {
-    echo "Ошибка: " . $e->getMessage() . "\n";
+	echo "Ошибка: " . $e->getMessage() . "\n";
 }

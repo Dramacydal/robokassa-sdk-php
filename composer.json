@@ -3,6 +3,8 @@
   "description": "SDK для работы с Robokassa в PHP",
   "type": "library",
   "license": "MIT",
+  "keywords": ["robokassa", "sdk", "payment"],
+  "homepage": "https://robokassa.com/",
   "authors": [
     {
       "name": "Robokassa",
@@ -18,7 +20,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Robokassa\\": "Src/"
+      "Robokassa\\": "src/"
     }
   },
   "autoload-dev": {
@@ -26,7 +28,6 @@
       "Robokassa\\Tests\\": "tests/"
     }
   },
-  "minimum-stability": "dev",
   "prefer-stable": true,
   "scripts": {
     "test": "phpunit --bootstrap vendor/autoload.php tests/"
