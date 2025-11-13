@@ -7,7 +7,7 @@ use Robokassa\Signature\SignatureService;
 class StatusService
 {
 	/** @var string */
-	private $endpoint = 'https://services.robokassa.ru/InvoiceServiceWebApi/api/GetInvoiceInformationList';
+	private $endpoint = 'https://services.robokassa.kz/InvoiceServiceWebApi/api/GetInvoiceInformationList';
 
 	/** @var HttpClientInterface */
 	private $http;

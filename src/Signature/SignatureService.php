@@ -1,9 +1,11 @@
 <?php
 namespace Robokassa\Signature;
 
+use Robokassa\Exception\RobokassaException;
+
 class SignatureService {
 	/** @var string[] */
-	private static $ALLOWED = array('md5','sha256','sha512');
+	private static $allowedAlgorithms = [ 'md5','sha256','sha512' ];
 
 	/** @var string */
 	private $defaultAlgo;
@@ -27,8 +29,8 @@ class SignatureService {
 	 * @return string
 	 */
 	public function signFiscal($base64Payload, $secret, $algo = null) {
-		$algo = strtolower($algo ? $algo : $this->defaultAlgo);
-		if (!in_array($algo, self::$ALLOWED, true)) {
+		$algo = strtolower($algo ?: $this->defaultAlgo);
+		if (!in_array($algo, self::$allowedAlgorithms, true)) {
 			$algo = 'md5';
 		}
 		$hashHex = hash($algo, $base64Payload . $secret, false);
@@ -71,41 +73,65 @@ class SignatureService {
 	 * Где пары Shp_* добавляются как key=value и сортируются по ключу (lexicographically).
 	 *
 	 * @param array       $params     Должны содержать OutSum, InvoiceID, опционально Receipt и Shp_* поля
-	 * @param string      $login
 	 * @param string      $password1
 	 * @param string|null $algo       md5|sha256|sha512 (иначе md5)
 	 * @return string                 HEX-хеш
 	 */
-	public function createPaymentSignature(array $params, $login, $password1, $algo = null) {
-		$required = array($login, $params['OutSum'], $params['InvoiceID']);
+	public function createPaymentSignature(array $params, string $password1, ?string $algo = null): string
+    {
+        if (!isset($params['OutSum'])) {
+            throw new RobokassaException('OutSum not set');
+        }
 
-		if (!empty($params['Receipt'])) {
-			$required[] = $params['Receipt'];
-		}
+        if (empty($params['InvoiceID']) ?? empty($params['InvId'])) {
+            $params['InvoiceID'] = '';
+        }
 
-		$required[] = $password1;
+        static $signatureOrder = [
+            'MerchantLogin',
+            'OutSum',
+            'InvoiceID', 'InvId',
+            'Receipt',
+            'ResultUrl2',
+            'SuccessUrl2',
+            'SuccessUrl2Method',
+        ];
+
+        $hashElements = [];
+        foreach ($signatureOrder as $key) {
+            if (isset($params[$key])) {
+                $hashElements[] = is_array($params[$key]) ? json_encode($params[$key]) : $params[$key];
+            }
+        }
+
+		$hashElements[] = $password1;
 
 		// собрать пары Shp_* в виде key=value и отсортировать
-		$pairs = array();
+		$pairs = [];
 		foreach ($params as $k => $v) {
-			if (preg_match('~^Shp_~iu', $k)) {
-				$pairs[] = $k . '=' . $v;
-			}
-		}
+            if (preg_match('~^Shp_~iu', $k)) {
+                $pairs[] = $k . '=' . $v;
+            }
+        }
+
 		sort($pairs);
 
-		$hashString = implode(':', $required);
 		if (!empty($pairs)) {
-			$hashString .= ':' . implode(':', $pairs);
+            $hashElements = array_merge($hashElements, $pairs);
 		}
 
-		$algo = strtolower($algo ? $algo : $this->defaultAlgo);
-		if (!in_array($algo, self::$ALLOWED, true)) {
-			$algo = 'md5';
-		}
-
-		return hash($algo, $hashString);
+		return $this->hash($hashElements, $algo);
 	}
+
+    public function hash(array $params, ?string $algo = null): string
+    {
+        $algo = strtolower($algo ?: $this->defaultAlgo);
+        if (!in_array($algo, self::$allowedAlgorithms, true)) {
+            $algo = 'md5';
+        }
+
+        return hash($algo, implode(':', $params));
+    }
 
 	/**
 	 * Подпись для WebService OpStateExt.
@@ -116,15 +142,12 @@ class SignatureService {
 	 * @param string      $login
 	 * @param string      $invoiceID
 	 * @param string      $password2
-	 * @param string|null $algo       md5|sha256|sha512 (иначе md5)
+	 * @param string|null $algo md5|sha256|sha512 (иначе md5)
+	 *
 	 * @return string                 HEX-хеш
 	 */
-	public function signOpState($login, $invoiceID, $password2, $algo = null) {
-		$algo = strtolower($algo ? $algo : $this->defaultAlgo);
-		if (!in_array($algo, self::$ALLOWED, true)) {
-			$algo = 'md5';
-		}
-
-		return hash($algo, $login . ':' . $invoiceID . ':' . $password2);
-	}
+	public function signOpState(string $login, string $invoiceID, string $password2, ?string $algo = null): string
+    {
+        return $this->hash([ $login, $invoiceID, $password2 ], $algo);
+    }
 }

@@ -14,7 +14,7 @@ class WebService {
 	private string $merchantLogin;
 	private string $password2;
 	private string $hashType;
-	private string $url;
+	private string $endpoint = 'https://auth.robokassa.kz/Merchant/WebService/Service.asmx';
 
 	/**
 	 * @param HttpClientInterface $http
@@ -22,15 +22,13 @@ class WebService {
 	 * @param string $merchantLogin
 	 * @param string $password2
 	 * @param string $hashType
-	 * @param string $url
 	 */
-	public function __construct(HttpClientInterface $http, SignatureService $sign, string $merchantLogin, string $password2, string $hashType, string $url) {
+	public function __construct(HttpClientInterface $http, SignatureService $sign, string $merchantLogin, string $password2, string $hashType) {
 		$this->http = $http;
 		$this->sign = $sign;
 		$this->merchantLogin = $merchantLogin;
 		$this->password2 = $password2;
 		$this->hashType = $hashType;
-		$this->url = $url;
 	}
 
 	/**
@@ -81,7 +79,7 @@ class WebService {
 	}
 
 	private function buildUrl(string $segment, string $query): string {
-		return $this->url . '/' . $segment . '?' . $query;
+		return $this->endpoint . '/' . $segment . '?' . $query;
 	}
 
 	private function xmlToArray(string $xml): array {
