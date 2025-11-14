@@ -6,6 +6,8 @@ use Robokassa\Exception\RobokassaException;
 use Robokassa\Signature\SignatureService;
 
 class PaymentService {
+    use Helper;
+
 	private HttpClientInterface $http;
 	private SignatureService $sign;
 	private string $merchantLogin;
@@ -63,7 +65,16 @@ class PaymentService {
         throw new RobokassaException('Failed to send payment request. HTTP Status: ' . $resp->status);
     }
 
-    public function validatePaymentSignature(array $params, string $signature): bool
+    public function validateResultSignature(array $params, string $signature): bool
+    {
+        $filtered = array_filter($params, function (string $key) {
+            return in_array($key, [ 'InvId', 'InvoiceID', 'OutSum' ]) || $this->isCustomParameter($key);
+        }, ARRAY_FILTER_USE_KEY);
+
+        return $this->validateSignature($filtered, $signature);
+    }
+
+    public function validateSignature(array $params, string $signature): bool
     {
         $calculated = $this->sign->createPaymentSignature(
             $params,
@@ -71,7 +82,7 @@ class PaymentService {
             $this->hashType
         );
 
-        return mb_strtoupper($calculated) ===  mb_strtoupper($signature);
+        return mb_strtoupper($calculated) === mb_strtoupper($signature);
     }
 
     /**
@@ -93,7 +104,7 @@ class PaymentService {
 			$params['IsTest'] = '1';
 		}
 		foreach ($params as $name => $value) {
-			if (preg_match('~^Shp_~iu', $name)) {
+			if ($this->isCustomParameter($name)) {
 				$params[$name] = urlencode($value);
 			}
 		}
@@ -114,7 +125,7 @@ class PaymentService {
 			$sig['Receipt'] = urldecode($params['Receipt']);
 		}
 		foreach ($params as $name => $value) {
-			if (preg_match('~^Shp_~iu', $name)) {
+			if ($this->isCustomParameter($name)) {
 				$sig[$name] = $value;
 			}
 		}

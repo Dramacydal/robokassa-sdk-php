@@ -2,8 +2,11 @@
 namespace Robokassa\Signature;
 
 use Robokassa\Exception\RobokassaException;
+use Robokassa\Service\Helper;
 
 class SignatureService {
+    use Helper;
+
 	/** @var string[] */
 	private static $allowedAlgorithms = [ 'md5','sha256','sha512' ];
 
@@ -110,7 +113,7 @@ class SignatureService {
 		// собрать пары Shp_* в виде key=value и отсортировать
 		$pairs = [];
 		foreach ($params as $k => $v) {
-            if (preg_match('~^Shp_~iu', $k)) {
+            if ($this->isCustomParameter($k)) {
                 $pairs[] = $k . '=' . $v;
             }
         }
