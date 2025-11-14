@@ -73,24 +73,25 @@ class SignatureService {
 	 * Где пары Shp_* добавляются как key=value и сортируются по ключу (lexicographically).
 	 *
 	 * @param array       $params     Должны содержать OutSum, InvoiceID, опционально Receipt и Shp_* поля
-	 * @param string      $password1
-	 * @param string|null $algo       md5|sha256|sha512 (иначе md5)
+	 * @param string      $password
+     * @param string|null $algo       md5|sha256|sha512 (иначе md5)
+	 *
 	 * @return string                 HEX-хеш
 	 */
-	public function createPaymentSignature(array $params, string $password1, ?string $algo = null): string
+	public function createPaymentSignature(array $params, string $password, ?string $algo = null): string
     {
         if (!isset($params['OutSum'])) {
             throw new RobokassaException('OutSum not set');
         }
 
-        if (empty($params['InvoiceID']) ?? empty($params['InvId'])) {
-            $params['InvoiceID'] = '';
+        if (!empty($params['InvId'])) {
+            $params['InvoiceID'] = $params['InvId'];
         }
 
         static $signatureOrder = [
             'MerchantLogin',
             'OutSum',
-            'InvoiceID', 'InvId',
+            'InvoiceID',
             'Receipt',
             'ResultUrl2',
             'SuccessUrl2',
@@ -104,7 +105,7 @@ class SignatureService {
             }
         }
 
-		$hashElements[] = $password1;
+		$hashElements[] = $password;
 
 		// собрать пары Shp_* в виде key=value и отсортировать
 		$pairs = [];

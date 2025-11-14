@@ -82,6 +82,7 @@ class Robokassa
             $this->signer,
             $this->login,
             $this->password1,
+            $this->password2,
             $this->is_test,
             $this->hashType
         );

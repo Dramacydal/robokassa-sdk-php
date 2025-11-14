@@ -10,6 +10,7 @@ class PaymentService {
 	private SignatureService $sign;
 	private string $merchantLogin;
 	private string $password1;
+	private string $password2;
 	private bool $isTest;
 	private string $hashType;
 
@@ -22,11 +23,12 @@ class PaymentService {
     private string $jwtApiUrl = 'https://services.robokassa.kz/InvoiceServiceWebApi/api/CreateInvoice';
 
 
-	public function __construct(HttpClientInterface $http, SignatureService $sign, string $login, string $password1, bool $isTest, string $hashType) {
+	public function __construct(HttpClientInterface $http, SignatureService $sign, string $login, string $password1, string $password2, bool $isTest, string $hashType) {
 		$this->http = $http;
 		$this->sign = $sign;
 		$this->merchantLogin = $login;
 		$this->password1 = $password1;
+		$this->password2 = $password2;
 		$this->isTest = $isTest;
 		$this->hashType = $hashType;
 	}
@@ -63,11 +65,13 @@ class PaymentService {
 
     public function validatePaymentSignature(array $params, string $signature): bool
     {
-        return $this->sign->createPaymentSignature(
-                $params,
-                $this->password1,
-                $this->hashType
-            ) === $signature;
+        $calculated = $this->sign->createPaymentSignature(
+            $params,
+            $this->password2,
+            $this->hashType
+        );
+
+        return mb_strtoupper($calculated) ===  mb_strtoupper($signature);
     }
 
     /**
@@ -189,15 +193,10 @@ class PaymentService {
 
         $params = array_map(fn($x) => is_array($x) ? json_encode($x) : $x, $params);
 
-        if (!empty($params['Receipt'])) {
-//            $params['Receipt'] = urlencode(urlencode($params['Receipt']));
-        }
-
         return [
             'link' => $this->paymentGenerator . '?' . http_build_query($params, '', '&'),
             'url' => $this->paymentGenerator,
             'params' => $params,
-            'encoded_params' => $encodedParams,
         ];
     }
 }
